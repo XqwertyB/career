@@ -23,6 +23,7 @@ class Job(models.Model):
     salary = models.BooleanField("Holati", default=True)
     work_time = models.CharField("Ish vaqt tartibi", choices=TIME, default='part_time', max_length=20)
     status = models.CharField('Xolati', choices=STATUS, default='new', max_length=20)
+    status_admin = models.BooleanField("Admin uchun kurinish statusi", default=False)
     organization = models.CharField('Organizatsiya nomi', max_length=100)
     view_count = models.PositiveIntegerField(default=0)
 
@@ -42,7 +43,7 @@ class New(models.Model):
 class Event(models.Model):
     title = models.CharField('Nomi', max_length=50)
     discribe = models.TextField("Ma'lumot")
-    begin_date = models.DateTimeField(auto_now=True)
+    begin_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField(auto_now=True)
     status = models.BooleanField('Xolati', default=False)
 
@@ -92,6 +93,7 @@ class ApiData(models.Model):
         return self.short_name
 
 class UserData(models.Model):
+    users = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     username = models.CharField(max_length=150, unique=True)
     password = models.CharField(max_length=128)
     data = models.JSONField()

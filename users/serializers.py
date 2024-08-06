@@ -96,7 +96,7 @@ class SignUpSerializer(serializers.ModelSerializer):
 class ChangeUserInformation(serializers.Serializer):
     first_name = serializers.CharField(write_only=True, required=True)
     last_name = serializers.CharField(write_only=True, required=True)
-    sex = serializers.CharField(write_only=True, required=True)
+    gender = serializers.CharField(write_only=True, required=True)
     another_number = serializers.CharField(write_only=True, required=True)
     pass_address_location = serializers.CharField(write_only=True, required=True)
     birthday = serializers.DateField(write_only=True, required=True)
@@ -144,7 +144,7 @@ class ChangeUserInformation(serializers.Serializer):
 
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
-        instance.sex = validated_data.get('sex', instance.sex)
+        instance.gender = validated_data.get('gender', instance.gender)
         instance.another_number = validated_data.get('another_number', instance.another_number)
         instance.pass_address_location = validated_data.get('pass_address_location', instance.pass_address_location)
         instance.birthday = validated_data.get('birthday', instance.birthday)
@@ -166,7 +166,7 @@ class ChangeUserInformation(serializers.Serializer):
 class ChangeUserInformationTo(serializers.Serializer):
     first_name = serializers.CharField(write_only=True, required=False)
     last_name = serializers.CharField(write_only=True, required=False)
-    sex = serializers.CharField(write_only=True, required=False)
+    gender = serializers.CharField(write_only=True, required=False)
     another_number = serializers.CharField(write_only=True, required=False)
     pass_address_location = serializers.CharField(write_only=True, required=False)
     birthday = serializers.DateField(write_only=True, required=False)
@@ -190,7 +190,7 @@ class ChangeUserInformationTo(serializers.Serializer):
 
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.last_name = validated_data.get('last_name', instance.last_name)
-        instance.sex = validated_data.get('sex', instance.sex)
+        instance.gender = validated_data.get('gender', instance.gender)
         instance.another_number = validated_data.get('another_number', instance.another_number)
         instance.pass_address_location = validated_data.get('pass_address_location', instance.pass_address_location)
         instance.birthday = validated_data.get('birthday', instance.birthday)
@@ -366,6 +366,6 @@ class ForgotPasswordSerializer(serializers.Serializer):
 class GetUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'first_name', 'last_name',  'is_superuser', 'sex', 'phone_number',
+        fields = ['id', 'first_name', 'last_name',  'is_superuser', 'gender', 'phone_number',
                   'another_number',  'pass_address_location',
                   'birthday',   'role']

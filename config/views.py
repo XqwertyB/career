@@ -8,11 +8,13 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework import status
 from rest_framework.views import APIView
+from rest_framework import generics
 from rest_framework.response import Response
 from users.custom_permissions import RolePermission
 from users.constants import ADMIN_ROLE, MODERATOR_ROLE
 from .models import Job, ApiData, UserData
 from rest_framework.permissions import AllowAny
+from .serializers import JobSerializer, JobAdminSerializer
 
 class AdminOnlyView(APIView):
     permission_classes = [RolePermission]
@@ -118,7 +120,7 @@ class AuthAndFetchDataView(APIView):
         }
         print(payload)
 
-        response = requests.post(url,headers=header, json=payload)
+        response = requests.post(url, headers=header, json=payload)
         print(response.status_code)
         if response.status_code == 200:
 
@@ -145,3 +147,15 @@ class AuthAndFetchDataView(APIView):
 
     def save_user_data(self, login, password, data):
         UserData.objects.create(username=login, password=password, data=data)
+
+
+class JobView(generics.ListCreateAPIView):
+    queryset = Job.objects.all()
+    serializer_class = JobSerializer
+    permission_classes = [IsAuthenticated]
+
+class JobView1(generics.ListAPIView):
+    queryset = Job.objects.filter(status_admin=True)
+    serializer_class = JobAdminSerializer
+
+

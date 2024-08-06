@@ -17,7 +17,8 @@ urlpatterns = [
     path('verify-code/password/', VerifyCodeChangePasswordAPIView.as_view()),
     path('change-password/', ChangePasswordView.as_view()),
 
-    path('asdf/', AdminOnlyView.as_view()),
+    path('asdf/', JobView1.as_view()),
     path('sss/', get_and_save_all_pages, name='get_api_data_with_token'),
-    path('aaaa/', AuthAndFetchDataView.as_view())
+    path('aaaa/', AuthAndFetchDataView.as_view()),
+    path('job-create/', JobView.as_view())
 ]

@@ -6,7 +6,7 @@ from config.models import UserData
 
 @admin.register(User)
 class UserAdmin(admin.ModelAdmin):
-    list_display = ['first_name', 'last_name', 'phone_number', 'is_staff', 'is_active', 'auth_status', 'role']
+    list_display = ['id','first_name', 'last_name', 'phone_number', 'is_staff', 'is_active', 'auth_status', 'role']
     search_fields = ['first_name', 'last_name', 'phone_number']
 
 
