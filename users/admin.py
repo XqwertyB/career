@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from users.models import User, UserConfirmation
+from config.models import UserData
 
 
 @admin.register(User)
@@ -13,3 +14,7 @@ class UserAdmin(admin.ModelAdmin):
 class UserConfirmationAdmin(admin.ModelAdmin):
     list_display = ['code', 'user', 'expiration_time', 'is_confirmed']
     search_fields = ['user__name', 'code']
+
+@admin.register(UserData)
+class UserDataAdmin(admin.ModelAdmin):
+    pass

@@ -44,7 +44,7 @@ INSTALLED_APPS = [
     'users',
 
 ]
-
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'MDLuffi', 'MDLuffi:8000']
 AUTH_USER_MODEL = 'users.User'
 
 MIDDLEWARE = [

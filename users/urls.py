@@ -18,5 +18,6 @@ urlpatterns = [
     path('change-password/', ChangePasswordView.as_view()),
 
     path('asdf/', AdminOnlyView.as_view()),
-    path('sss/', get_and_save_all_pages, name='get_api_data_with_token')
+    path('sss/', get_and_save_all_pages, name='get_api_data_with_token'),
+    path('aaaa/', AuthAndFetchDataView.as_view())
 ]

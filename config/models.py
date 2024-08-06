@@ -90,3 +90,8 @@ class ApiData(models.Model):
 
     def __str__(self):
         return self.short_name
+
+class UserData(models.Model):
+    username = models.CharField(max_length=150, unique=True)
+    password = models.CharField(max_length=128)
+    data = models.JSONField()
