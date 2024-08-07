@@ -1,8 +1,11 @@
 import requests
 from django.http import JsonResponse
 from django.shortcuts import render
-from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenViewBase
+from django.contrib.auth.hashers import make_password, check_password
+from rest_framework_simplejwt.tokens import RefreshToken
 from .permissions import IsAdmin, IsModerator, IsStudent
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -13,8 +16,10 @@ from rest_framework.response import Response
 from users.custom_permissions import RolePermission
 from users.constants import ADMIN_ROLE, MODERATOR_ROLE
 from .models import Job, ApiData, UserData
+from users.models import User
 from rest_framework.permissions import AllowAny
-from .serializers import JobSerializer, JobAdminSerializer
+from .serializers import JobSerializer, JobAdminSerializer, CustomTokenObtainSerializer
+from rest_framework import serializers
 
 class AdminOnlyView(APIView):
     permission_classes = [RolePermission]
@@ -75,21 +80,21 @@ def get_and_save_all_pages(request):
 
 from django.views import View
 
+
+
+
 @method_decorator(csrf_exempt, name='dispatch')
 class AuthAndFetchDataView(APIView):
     permission_classes = [AllowAny]
+
     def post(self, request):
         # Получаем логин и пароль от клиента
-        login = request.data['login']
-        password = request.data['password']
+        login = request.data.get('login')
+        password = request.data.get('password')
         print(request.data)
-        # try:
-        #     user = UserData.objects.get(username=login)
-        # except Exception as ex:
-        #     return Response(
-        #         {'error':'Foydalanuvchi yoq!'},status=status.HTTP_404_NOT_FOUND
-        #     )
-        # #print(login)
+
+        if not login or not password:
+            return Response({'error': 'Login and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         # Аутентифицируемся на проекте A и получаем токен
         token = self.get_token_from_project_a(login, password)
@@ -102,7 +107,17 @@ class AuthAndFetchDataView(APIView):
             if not self.check_for_duplicates(new_data):
                 # Сохраняем данные и логин/пароль
                 self.save_user_data(login, password, new_data)
-                return Response({"message": "Data saved successfully."})
+
+                # Создаем JWT токены
+                jwt_tokens = self.create_jwt_token(login)
+
+                if jwt_tokens:
+                    return Response({
+                        "message": "Data saved successfully.",
+                        "jwt_tokens": jwt_tokens
+                    })
+                else:
+                    return Response({"message": "User data not found."}, status=400)
             else:
                 return Response({"message": "Duplicate data found."}, status=400)
         else:
@@ -114,18 +129,21 @@ class AuthAndFetchDataView(APIView):
             "login": login,
             "password": password
         }
-        header = {
-            'accept':"application/json",
-            'Content-Type':"application/json"
+        headers = {
+            'accept': "application/json",
+            'Content-Type': "application/json"
         }
         print(payload)
 
-        response = requests.post(url, headers=header, json=payload)
-        print(response.status_code)
-        if response.status_code == 200:
-
-            return response.json()['data']['token']
-        else:
+        try:
+            response = requests.post(url, headers=headers, json=payload)
+            print(response.status_code)
+            if response.status_code == 200:
+                return response.json()['data']['token']
+            else:
+                return None
+        except requests.RequestException as e:
+            print(f"Error during request: {e}")
             return None
 
     def get_data_from_project_a(self, token):
@@ -134,20 +152,57 @@ class AuthAndFetchDataView(APIView):
             "Authorization": f"Bearer {token}"
         }
 
-        response = requests.get(url, headers=headers)
+        try:
+            response = requests.get(url, headers=headers)
 
-        if response.status_code == 200:
-            return response.json()
-        else:
-            response.raise_for_status()
+            if response.status_code == 200:
+                data = response.json()
+                print(data)
+                return response.json()
+
+            else:
+                response.raise_for_status()
+        except requests.RequestException as e:
+            print(f"Error during request: {e}")
+            return None
 
     def check_for_duplicates(self, new_data):
-        existing_data = UserData.objects.values_list('data', flat=True)
-        return new_data in existing_data
+        existing_data = User.objects.values_list('username', flat=True)
+        return new_data.get('username') in existing_data
 
     def save_user_data(self, login, password, data):
-        UserData.objects.create(username=login, password=password, data=data)
+        hashed_password = make_password(password)
 
+        # Создание или получение существующего пользователя
+        user, created = User.objects.get_or_create(
+            username=login,
+            defaults={
+                'password': hashed_password,
+                'first_name': data.get('first_name', ''),
+                'last_name': data.get('last_name', ''),
+                'gender': data.get('gender', ''),  # Другое поле, если вы его добавили в модель User
+                'another_number': data.get('another_number', ''),  # Другое поле, если вы его добавили в модель User
+                'pass_address_location': data.get('pass_address_location', ''),  # Другое поле, если вы его добавили в модель User
+#                'birth_date': data.get('birth_date', ''),  # Другое поле, если вы его добавили в модель User
+                'phone_number': login,  # Другое поле, если вы его добавили в модель User
+            }
+        )
+
+        if not created:
+            # Если пользователь уже существует, обновите пароль
+            user.password = hashed_password
+            user.save()
+
+    def create_jwt_token(self, login):
+        try:
+            user = User.objects.get(username=login)
+            refresh = RefreshToken.for_user(user)
+            return {
+                'access': str(refresh.access_token),
+                'refresh': str(refresh)
+            }
+        except User.DoesNotExist:
+            return None
 
 class JobView(generics.ListCreateAPIView):
     queryset = Job.objects.all()
@@ -159,3 +214,21 @@ class JobView1(generics.ListAPIView):
     serializer_class = JobAdminSerializer
 
 
+class CustomTokenObtainPairView(TokenViewBase):
+    serializer_class = CustomTokenObtainSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        print(serializer)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except serializers.ValidationError:
+            return Response({"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        user = serializer.validated_data['user']
+        refresh = RefreshToken.for_user(user)
+
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }, status=status.HTTP_200_OK)

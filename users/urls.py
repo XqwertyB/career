@@ -20,5 +20,6 @@ urlpatterns = [
     path('asdf/', JobView1.as_view()),
     path('sss/', get_and_save_all_pages, name='get_api_data_with_token'),
     path('aaaa/', AuthAndFetchDataView.as_view()),
-    path('job-create/', JobView.as_view())
+    path('job-create/', JobView.as_view()),
+    path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
 ]

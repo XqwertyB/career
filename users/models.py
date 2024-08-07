@@ -92,16 +92,21 @@ class User(AbstractUser, BaseModel):
         (FEMALE, FEMALE)
     )
 
-    username = models.CharField(max_length=100)
-    first_name = models.CharField(max_length=150)
-    last_name = models.CharField(max_length=150)
+    username = models.CharField(max_length=100, null=True)
+    full_name = models.CharField(max_length=100, null=True)
+    short_name = models.CharField(max_length=100, null=True)
+    first_name = models.CharField(max_length=100, null=True)
+    second_name = models.CharField(max_length=100, null=True)
+    third_name = models.CharField(max_length=100, null=True)
+    birth_date = models.PositiveBigIntegerField(default=0, null=True)
+    student_id_number = models.PositiveIntegerField(default=0, null=True)
     auth_status = models.CharField(max_length=31, choices=AUTH_STATUS, default=NEW)
     gender = models.CharField(max_length=20, choices=SEX_CHOICES)
     phone_number = models.CharField(max_length=12, unique=True, validators=[_validate_phone])
     another_number = models.CharField(max_length=12, validators=[_validate_phone], null=True, blank=True)
     pass_address_location = models.CharField(max_length=255)
-    birthday = models.DateField(null=True, blank=True)
     role = models.CharField(max_length=9, choices=ROLES, default=USER_ROLE)
+    image = models.CharField(max_length=250, null=True)
 
     USERNAME_FIELD = 'phone_number'
     REQUIRED_FIELDS = []
