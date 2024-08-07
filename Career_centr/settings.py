@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     'config.apps.ConfigConfig',
     'rest_framework',
     'rest_framework_simplejwt',
-
+    # 'rest_framework_swagger',
+    # 'drf_yasg',
     'users',
 
 ]

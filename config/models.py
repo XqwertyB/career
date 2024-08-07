@@ -92,6 +92,7 @@ class ApiData(models.Model):
     def __str__(self):
         return self.short_name
 
+
 class UserData(models.Model):
     users = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     username = models.CharField(max_length=150, unique=True)

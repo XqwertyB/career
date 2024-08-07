@@ -35,19 +35,15 @@ class AdminOnlyView(APIView):
 def get_and_save_all_pages(request):
     base_url = 'https://student.tfi.uz/rest/v1/data/student-list'
     token = 'm7x05Ffypq3jBvplaTc54wk7JqNyqqBO'
-
     headers = {
         'Authorization': f'Bearer {token}',
         'Content-Type': 'application/json',
     }
-
     page = 1
     all_data = []
     saved_count = 0
-
     while True:
         response = requests.get(f"{base_url}?page={page}", headers=headers)
-
         if response.status_code == 200:
             data = response.json()
             for item in data['data']['items']:
@@ -62,23 +58,18 @@ def get_and_save_all_pages(request):
                         #birth_date=item['birth_date'],
                         student_id_number=item['student_id_number'],
                         image=item['image'],
-
                     )
                     all_data.append(item)
                     saved_count += 1
-
-
             # Проверка на наличие следующей страницы
             if page >= data['data']['pagination']['pageCount']:
                 break
             page += 1
         else:
             return JsonResponse({'error': 'Could not retrieve data'}, status=response.status_code)
-
     return JsonResponse({'status': 'data saved', 'saved_items': saved_count})
 
 
-from django.views import View
 
 
 
@@ -137,7 +128,6 @@ class AuthAndFetchDataView(APIView):
 
         try:
             response = requests.post(url, headers=headers, json=payload)
-            print(response.status_code)
             if response.status_code == 200:
                 return response.json()['data']['token']
             else:
@@ -158,7 +148,7 @@ class AuthAndFetchDataView(APIView):
             if response.status_code == 200:
                 data = response.json()
                 print(data)
-                return response.json()
+                return data
 
             else:
                 response.raise_for_status()
@@ -170,29 +160,28 @@ class AuthAndFetchDataView(APIView):
         existing_data = User.objects.values_list('username', flat=True)
         return new_data.get('username') in existing_data
 
-    def save_user_data(self, login, password, data):
+    def save_user_data(self, login, password, new_data):
         hashed_password = make_password(password)
 
-        # Создание или получение существующего пользователя
-        user, created = User.objects.get_or_create(
-            username=login,
-            defaults={
-                'password': hashed_password,
-                'first_name': data.get('first_name', ''),
-                'last_name': data.get('last_name', ''),
-                'gender': data.get('gender', ''),  # Другое поле, если вы его добавили в модель User
-                'another_number': data.get('another_number', ''),  # Другое поле, если вы его добавили в модель User
-                'pass_address_location': data.get('pass_address_location', ''),  # Другое поле, если вы его добавили в модель User
-#                'birth_date': data.get('birth_date', ''),  # Другое поле, если вы его добавили в модель User
-                'phone_number': login,  # Другое поле, если вы его добавили в модель User
-            }
-        )
-
+        user, created = User.objects.get_or_create(username=login, defaults={'password': hashed_password})
         if not created:
-            # Если пользователь уже существует, обновите пароль
             user.password = hashed_password
             user.save()
 
+        if 'data' in new_data and 'items' in new_data['data']:
+            for item in new_data['data']['items']:
+                if not User.objects.filter(student_id_number=item['student_id_number']).exists():
+                    # Сохранение данных в кастомную модель пользователя
+                    user.full_name = item['full_name']
+                    user.short_name = item['short_name']
+                    user.first_name = item['first_name']
+                    user.second_name = item['second_name']
+                    user.third_name = item['third_name']
+                    user.student_id_number = item['student_id_number']
+                    user.image = item['image']
+                    user.save()
+                else:
+                    print(f"Duplicate found: {item['student_id_number']}")
     def create_jwt_token(self, login):
         try:
             user = User.objects.get(username=login)
