@@ -210,67 +210,67 @@ class ChangeUserInformationTo(serializers.Serializer):
         return data
 
 
-class LoginSerializer(TokenObtainPairSerializer):
-
-    def __init__(self, *args, **kwargs):
-        super(LoginSerializer, self).__init__(*args, **kwargs)
-        self.fields['phone_number'] = serializers.CharField(required=True)
-
-    def auth_validate(self, data):
-        phone_number = data.get('phone_number')  # phone_number
-        user = self.get_user(phone_number=phone_number)
-        phone_number = user.phone_number
-        authentication_kwargs = {
-            'phone_number': data['phone_number'],
-            'password': data['password']
-        }
-        current_user = User.objects.filter(phone_number__iexact=phone_number).first()  # None
-
-        if current_user is not None and current_user.auth_status in [NEW, CODE_VERIFIED]:
-            raise ValidationError(
-                {
-                    'success': False,
-                    'message': "You are not fully registered!"
-                }
-            )
-        user = authenticate(**authentication_kwargs)
-        if user is not None:
-            self.user = user
-        else:
-            raise ValidationError(
-                {
-                    'success': False,
-                    'message': "Sorry, login or password you entered is incorrect. Please check and trg again!"
-                }
-            )
-
-    def validate(self, data):
-        self.auth_validate(data)
-        if self.user.auth_status not in [DONE, FULL_DONE]:
-            raise PermissionDenied(
-                {
-                    "satatus": False,
-                    "message": "You cannot login. You don't have permission"
-                }
-            )
-        data = self.user.token()
-        data['auth_status'] = self.user.auth_status
-        data['full_name'] = self.user.full_name
-        data['is_superuser'] = self.user.is_superuser
-        return data
-
-    def get_user(self, **kwargs):
-        users = User.objects.filter(**kwargs)
-        if not users.exists():
-            raise ValidationError(
-                {
-                    "status": False,
-                    "message": "No active account found"
-                }
-            )
-        return users.first()
-
-
+# class LoginSerializer(TokenObtainPairSerializer):
+#
+#     def __init__(self, *args, **kwargs):
+#         super(LoginSerializer, self).__init__(*args, **kwargs)
+#         self.fields['phone_number'] = serializers.CharField(required=True)
+#
+#     def auth_validate(self, data):
+#         phone_number = data.get('phone_number')  # phone_number
+#         user = self.get_user(phone_number=phone_number)
+#         phone_number = user.phone_number
+#         authentication_kwargs = {
+#             'phone_number': data['phone_number'],
+#             'password': data['password']
+#         }
+#         current_user = User.objects.filter(phone_number__iexact=phone_number).first()  # None
+#
+#         if current_user is not None and current_user.auth_status in [NEW, CODE_VERIFIED]:
+#             raise ValidationError(
+#                 {
+#                     'success': False,
+#                     'message': "You are not fully registered!"
+#                 }
+#             )
+#         user = authenticate(**authentication_kwargs)
+#         if user is not None:
+#             self.user = user
+#         else:
+#             raise ValidationError(
+#                 {
+#                     'success': False,
+#                     'message': "Sorry, login or password you entered is incorrect. Please check and trg again!"
+#                 }
+#             )
+#
+#     def validate(self, data):
+#         self.auth_validate(data)
+#         if self.user.auth_status not in [DONE, FULL_DONE]:
+#             raise PermissionDenied(
+#                 {
+#                     "satatus": False,
+#                     "message": "You cannot login. You don't have permission"
+#                 }
+#             )
+#         data = self.user.token()
+#         data['auth_status'] = self.user.auth_status
+#         data['full_name'] = self.user.full_name
+#         data['is_superuser'] = self.user.is_superuser
+#         return data
+#
+#     def get_user(self, **kwargs):
+#         users = User.objects.filter(**kwargs)
+#         if not users.exists():
+#             raise ValidationError(
+#                 {
+#                     "status": False,
+#                     "message": "No active account found"
+#                 }
+#             )
+#         return users.first()
+#
+#
 class LoginRefreshSerializer(TokenRefreshSerializer):
 
     def validate(self, attrs):

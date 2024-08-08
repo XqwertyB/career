@@ -21,7 +21,10 @@ from users.models import User
 from rest_framework.permissions import AllowAny
 from .serializers import JobSerializer, JobAdminSerializer, CustomTokenObtainSerializer
 from rest_framework import serializers
-User = get_user_model()
+
+
+
+
 class AdminOnlyView(APIView):
     permission_classes = [RolePermission]
 
@@ -56,7 +59,7 @@ def get_and_save_all_pages(request):
                         first_name=item['first_name'],
                         second_name=item['second_name'],
                         third_name=item['third_name'],
-                        #birth_date=item['birth_date'],
+                        # birth_date=item['birth_date'],
                         student_id_number=item['student_id_number'],
                         image=item['image'],
                     )
@@ -71,10 +74,6 @@ def get_and_save_all_pages(request):
     return JsonResponse({'status': 'data saved', 'saved_items': saved_count})
 
 
-
-
-
-
 @method_decorator(csrf_exempt, name='dispatch')
 class AuthAndFetchDataView(APIView):
     permission_classes = [AllowAny]
@@ -83,7 +82,6 @@ class AuthAndFetchDataView(APIView):
         # Получаем логин и пароль от клиента
         login = request.data.get('login')
         password = request.data.get('password')
-
 
         if not login or not password:
             return Response({'error': 'Login and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -95,19 +93,15 @@ class AuthAndFetchDataView(APIView):
             # Отправляем токен на проект A и получаем данные
             new_data = self.get_data_from_project_a(token)
 
-
-
-
             self.save_user_data(login, password, new_data)
-
 
             jwt_tokens = self.create_jwt_token(login)
 
             if jwt_tokens:
                 return Response({
-                        "message": "Data saved successfully.",
-                        "jwt_tokens": jwt_tokens
-                    })
+                    "message": "Data saved successfully.",
+                    "jwt_tokens": jwt_tokens
+                })
             else:
                 return Response({"message": "User data not found."}, status=400)
         else:
@@ -123,7 +117,6 @@ class AuthAndFetchDataView(APIView):
             'accept': "application/json",
             'Content-Type': "application/json"
         }
-
 
         try:
             response = requests.post(url, headers=headers, json=payload)
@@ -154,38 +147,35 @@ class AuthAndFetchDataView(APIView):
             print(f"Error during request: {e}")
             return None
 
-    def check_for_duplicates(self, new_data):
-        existing_data = User.objects.values_list('student_id_number', flat=True)
-        return new_data.get('student_id_number') in existing_data
-
     def save_user_data(self, login, password, new_data):
         hashed_password = make_password(password)
-        print('kirdi')
-        user, created = User.objects.get_or_create(username=login, defaults={'password': hashed_password})
-
-        if not created:
-            #print('sal')
+        print(new_data['data']['student_id_number'])
+        try:
+            user = User.objects.get(student_id_number=new_data['data']['student_id_number'])
+            print(user)
             user.password = hashed_password
+        except Exception as ex:
+
+            user = User(
+                student_id_number=new_data['data']['student_id_number'],
+                password=hashed_password
+            )
+            print('21')
+
+        # if 'data' in new_data:
+            item = new_data['data']
+            user.full_name = item['full_name']
+            user.short_name = item['short_name']
+            user.first_name = item['first_name']
+            user.second_name = item['second_name']
+            user.third_name = item['third_name']
+            user.image = item['image']
             user.save()
-        #print(data)
-        if 'data' in new_data:
-            for item in new_data['data']:
-                print(new_data)
-#                if not User.objects.get(student_id_number=["student_id_number"]).exists():
-#                    print('iwlavodi')
-                user.full_name = item['full_name']
-                user.short_name = item['short_name']
-                user.first_name = item['first_name']
-                user.second_name = item['second_name']
-                user.third_name = item['third_name']
-                user.student_id_number = str(item['student_id_number'])
-                user.image = item['image']
-                user.save()
-            else:
-                print(f"Duplicate found: {item['student_id_number']}")
+
     def create_jwt_token(self, login):
         try:
-            user = User.objects.get(username=login)
+            print('salom')
+            user = User.objects.get(student_id_number=login)
             refresh = RefreshToken.for_user(user)
             return {
                 'access': str(refresh.access_token),
@@ -194,10 +184,12 @@ class AuthAndFetchDataView(APIView):
         except User.DoesNotExist:
             return None
 
+
 class JobView(generics.ListCreateAPIView):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
     permission_classes = [IsAuthenticated]
+
 
 class JobView1(generics.ListAPIView):
     queryset = Job.objects.filter(status_admin=True)

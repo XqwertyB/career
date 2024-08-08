@@ -115,59 +115,6 @@ class User(AbstractUser, BaseModel):
     def __str__(self):
         return self.first_name
 
-    @property
-    def full_name(self):
-        return f"{self.first_name} {self.last_name}"
-
-    def create_verify_code(self):
-        code = "".join([str(random.randint(0, 100) % 10) for _ in range(6)])
-        print(f'{code=}')
-        try:
-            confirmation = UserConfirmation.objects.get(user_id=self.id)
-            confirmation.code = code
-            confirmation.save()
-        except UserConfirmation.DoesNotExist:
-            UserConfirmation.objects.create(user_id=self.id, code=code)
-
-        return code
-
-    def check_pass(self):
-        if not self.password:
-            temp_password = f"password{uuid.uuid4().__str__().split('-')[-1]}"
-            self.password = temp_password
-
-    def check_first_name(self):
-        if not self.first_name:
-            temp_first_name = f"first_name_{uuid.uuid4().__str__().split('-')[-1]}"
-            self.first_name = temp_first_name
-
-    def check_last_name(self):
-        if not self.last_name:
-            temp_last_name = f"last_name_{uuid.uuid4().__str__().split('-')[-1]}"
-            self.last_name = temp_last_name
-
-    def hashing_password(self):
-        if not self.password.startswith('pbkdf2_sha256'):
-            self.set_password(self.password)
-
-    def token(self):
-        refresh = RefreshToken.for_user(self)
-        return {
-            "access": str(refresh.access_token),
-            "refresh_token": str(refresh)
-        }
-
-    def save(self, *args, **kwargs):
-        if self.pk:
-            self.clean()
-        super(User, self).save(*args, **kwargs)
-
-    def clean(self):
-        self.check_first_name()
-        self.check_last_name()
-        self.check_pass()
-        self.hashing_password()
-
 
 class UserConfirmation(models.Model):
     code = models.CharField(max_length=6)
