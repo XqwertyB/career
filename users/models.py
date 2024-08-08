@@ -99,7 +99,7 @@ class User(AbstractUser, BaseModel):
     second_name = models.CharField(max_length=100, null=True)
     third_name = models.CharField(max_length=100, null=True)
     birth_date = models.PositiveBigIntegerField(default=0, null=True)
-    student_id_number = models.PositiveIntegerField(default=0, null=True)
+    student_id_number = models.CharField(max_length=100, null=True, unique=True)
     auth_status = models.CharField(max_length=31, choices=AUTH_STATUS, default=NEW)
     gender = models.CharField(max_length=20, choices=SEX_CHOICES)
     phone_number = models.CharField(max_length=12, unique=True, validators=[_validate_phone])

@@ -1,4 +1,5 @@
 import requests
+from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.shortcuts import render
 from rest_framework.permissions import IsAuthenticated
@@ -20,7 +21,7 @@ from users.models import User
 from rest_framework.permissions import AllowAny
 from .serializers import JobSerializer, JobAdminSerializer, CustomTokenObtainSerializer
 from rest_framework import serializers
-
+User = get_user_model()
 class AdminOnlyView(APIView):
     permission_classes = [RolePermission]
 
@@ -82,35 +83,33 @@ class AuthAndFetchDataView(APIView):
         # Получаем логин и пароль от клиента
         login = request.data.get('login')
         password = request.data.get('password')
-        print(request.data)
+
 
         if not login or not password:
             return Response({'error': 'Login and password are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         # Аутентифицируемся на проекте A и получаем токен
         token = self.get_token_from_project_a(login, password)
-        print(token)
+
         if token:
             # Отправляем токен на проект A и получаем данные
             new_data = self.get_data_from_project_a(token)
 
-            # Проверяем данные на дубликаты
-            if not self.check_for_duplicates(new_data):
-                # Сохраняем данные и логин/пароль
-                self.save_user_data(login, password, new_data)
 
-                # Создаем JWT токены
-                jwt_tokens = self.create_jwt_token(login)
 
-                if jwt_tokens:
-                    return Response({
+
+            self.save_user_data(login, password, new_data)
+
+
+            jwt_tokens = self.create_jwt_token(login)
+
+            if jwt_tokens:
+                return Response({
                         "message": "Data saved successfully.",
                         "jwt_tokens": jwt_tokens
                     })
-                else:
-                    return Response({"message": "User data not found."}, status=400)
             else:
-                return Response({"message": "Duplicate data found."}, status=400)
+                return Response({"message": "User data not found."}, status=400)
         else:
             return Response({"message": "Authentication failed."}, status=401)
 
@@ -124,7 +123,7 @@ class AuthAndFetchDataView(APIView):
             'accept': "application/json",
             'Content-Type': "application/json"
         }
-        print(payload)
+
 
         try:
             response = requests.post(url, headers=headers, json=payload)
@@ -147,7 +146,6 @@ class AuthAndFetchDataView(APIView):
 
             if response.status_code == 200:
                 data = response.json()
-                print(data)
                 return data
 
             else:
@@ -157,31 +155,34 @@ class AuthAndFetchDataView(APIView):
             return None
 
     def check_for_duplicates(self, new_data):
-        existing_data = User.objects.values_list('username', flat=True)
-        return new_data.get('username') in existing_data
+        existing_data = User.objects.values_list('student_id_number', flat=True)
+        return new_data.get('student_id_number') in existing_data
 
     def save_user_data(self, login, password, new_data):
         hashed_password = make_password(password)
-
+        print('kirdi')
         user, created = User.objects.get_or_create(username=login, defaults={'password': hashed_password})
+
         if not created:
+            #print('sal')
             user.password = hashed_password
             user.save()
-
-        if 'data' in new_data and 'items' in new_data['data']:
-            for item in new_data['data']['items']:
-                if not User.objects.filter(student_id_number=item['student_id_number']).exists():
-                    # Сохранение данных в кастомную модель пользователя
-                    user.full_name = item['full_name']
-                    user.short_name = item['short_name']
-                    user.first_name = item['first_name']
-                    user.second_name = item['second_name']
-                    user.third_name = item['third_name']
-                    user.student_id_number = item['student_id_number']
-                    user.image = item['image']
-                    user.save()
-                else:
-                    print(f"Duplicate found: {item['student_id_number']}")
+        #print(data)
+        if 'data' in new_data:
+            for item in new_data['data']:
+                print(new_data)
+#                if not User.objects.get(student_id_number=["student_id_number"]).exists():
+#                    print('iwlavodi')
+                user.full_name = item['full_name']
+                user.short_name = item['short_name']
+                user.first_name = item['first_name']
+                user.second_name = item['second_name']
+                user.third_name = item['third_name']
+                user.student_id_number = str(item['student_id_number'])
+                user.image = item['image']
+                user.save()
+            else:
+                print(f"Duplicate found: {item['student_id_number']}")
     def create_jwt_token(self, login):
         try:
             user = User.objects.get(username=login)
