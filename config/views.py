@@ -3,11 +3,8 @@ from django.contrib.auth import get_user_model
 from django.http import JsonResponse
 from django.shortcuts import render
 from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenViewBase
 from django.contrib.auth.hashers import make_password, check_password
 from rest_framework_simplejwt.tokens import RefreshToken
-from .permissions import IsAdmin, IsModerator, IsStudent
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework import status
@@ -19,59 +16,46 @@ from users.constants import ADMIN_ROLE, MODERATOR_ROLE
 from .models import Job, ApiData, UserData
 from users.models import User
 from rest_framework.permissions import AllowAny
-from .serializers import JobSerializer, JobAdminSerializer, CustomTokenObtainSerializer
+from .serializers import JobSerializer
 from rest_framework import serializers
 
 
-
-
-class AdminOnlyView(APIView):
-    permission_classes = [RolePermission]
-
-    def get_permissions(self):
-        self.permission_classes = [RolePermission(allowed_roles=[ADMIN_ROLE])]
-        return super(AdminOnlyView, self).get_permissions()
-
-    def get(self, request, *args, **kwargs):
-        return Response({"message": "This is an admin-only view."})
-
-
-def get_and_save_all_pages(request):
-    base_url = 'https://student.tfi.uz/rest/v1/data/student-list'
-    token = 'm7x05Ffypq3jBvplaTc54wk7JqNyqqBO'
-    headers = {
-        'Authorization': f'Bearer {token}',
-        'Content-Type': 'application/json',
-    }
-    page = 1
-    all_data = []
-    saved_count = 0
-    while True:
-        response = requests.get(f"{base_url}?page={page}", headers=headers)
-        if response.status_code == 200:
-            data = response.json()
-            for item in data['data']['items']:
-                if not ApiData.objects.filter(student_id_number=item['student_id_number']).exists():
-                    # Создание записей в базе данных
-                    ApiData.objects.create(
-                        full_name=item['full_name'],
-                        short_name=item['short_name'],
-                        first_name=item['first_name'],
-                        second_name=item['second_name'],
-                        third_name=item['third_name'],
-                        # birth_date=item['birth_date'],
-                        student_id_number=item['student_id_number'],
-                        image=item['image'],
-                    )
-                    all_data.append(item)
-                    saved_count += 1
-            # Проверка на наличие следующей страницы
-            if page >= data['data']['pagination']['pageCount']:
-                break
-            page += 1
-        else:
-            return JsonResponse({'error': 'Could not retrieve data'}, status=response.status_code)
-    return JsonResponse({'status': 'data saved', 'saved_items': saved_count})
+# def get_and_save_all_pages(request):
+#     base_url = 'https://student.tfi.uz/rest/v1/data/student-list'
+#     token = 'm7x05Ffypq3jBvplaTc54wk7JqNyqqBO'
+#     headers = {
+#         'Authorization': f'Bearer {token}',
+#         'Content-Type': 'application/json',
+#     }
+#     page = 1
+#     all_data = []
+#     saved_count = 0
+#     while True:
+#         response = requests.get(f"{base_url}?page={page}", headers=headers)
+#         if response.status_code == 200:
+#             data = response.json()
+#             for item in data['data']['items']:
+#                 if not ApiData.objects.filter(student_id_number=item['student_id_number']).exists():
+#                     # Создание записей в базе данных
+#                     ApiData.objects.create(
+#                         full_name=item['full_name'],
+#                         short_name=item['short_name'],
+#                         first_name=item['first_name'],
+#                         second_name=item['second_name'],
+#                         third_name=item['third_name'],
+#                         # birth_date=item['birth_date'],
+#                         student_id_number=item['student_id_number'],
+#                         image=item['image'],
+#                     )
+#                     all_data.append(item)
+#                     saved_count += 1
+#             # Проверка на наличие следующей страницы
+#             if page >= data['data']['pagination']['pageCount']:
+#                 break
+#             page += 1
+#         else:
+#             return JsonResponse({'error': 'Could not retrieve data'}, status=response.status_code)
+#     return JsonResponse({'status': 'data saved', 'saved_items': saved_count})
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -185,32 +169,45 @@ class AuthAndFetchDataView(APIView):
             return None
 
 
-class JobView(generics.ListCreateAPIView):
-    queryset = Job.objects.all()
+class JobView(APIView):
+    permission_classes = (RolePermission,)
+    def post(self, request, format=None):
+        serializer = JobSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ChangeJobInformationView(generics.UpdateAPIView):
+    permission_classes = [IsAuthenticated, MODERATOR_ROLE, ]
     serializer_class = JobSerializer
-    permission_classes = [IsAuthenticated]
+    http_method_names = ['patch', 'put']
+
+    def get_object(self):
+        return self.request.user
+
+    def update(self, request, *args, **kwargs):
+        super(ChangeJobInformationView, self).update(request, *args, **kwargs)
+        data = {
+            'success': True,
+            "message": "User updated successfully",
+            'auth_status': self.request.user.auth_status,
+        }
+        return Response(data, status=status.HTTP_200_OK)
+
+    def partial_update(self, request, *args, **kwargs):
+        super(ChangeJobInformationView, self).partial_update(request, *args, **kwargs)
+        data = {
+            'success': True,
+            "message": "User updated successfully",
+            'auth_status': self.request.user.auth_status,
+        }
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class JobView1(generics.ListAPIView):
     queryset = Job.objects.filter(status_admin=True)
-    serializer_class = JobAdminSerializer
+    serializer_class = JobSerializer
 
 
-class CustomTokenObtainPairView(TokenViewBase):
-    serializer_class = CustomTokenObtainSerializer
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        print(serializer)
-        try:
-            serializer.is_valid(raise_exception=True)
-        except serializers.ValidationError:
-            return Response({"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
-
-        user = serializer.validated_data['user']
-        refresh = RefreshToken.for_user(user)
-
-        return Response({
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-        }, status=status.HTTP_200_OK)

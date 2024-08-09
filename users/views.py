@@ -13,7 +13,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from users.serializers import SignUpSerializer, ChangeUserInformation, LogoutSerializer, \
     LoginRefreshSerializer, ResetPasswordSerializer, ForgotPasswordSerializer, GetUserSerializer, \
-    ChangeUserInformationTo
+    ChangeUserInformationTo, LoginSerializer
 from .custom_permissions import AuthStatusPermission, GetUserPermission, ChangeProfilEditPermission
 from .models import User, DONE, CODE_VERIFIED, NEW, FULL_DONE
 #from .utils import send_phone_notification
@@ -114,9 +114,9 @@ class ChangeUserInformationViewEdit(UpdateAPIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
-# class LoginView(TokenObtainPairView):
-#     serializer_class = LoginSerializer
-#
+class LoginView(TokenObtainPairView):
+    serializer_class = LoginSerializer
+
 
 class LoginRefreshView(TokenRefreshView):
     serializer_class = LoginRefreshSerializer

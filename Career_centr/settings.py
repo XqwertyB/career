@@ -32,6 +32,7 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'MDLuffi', 'MDLuffi:8000']
 
 INSTALLED_APPS = [
     'jazzmin',
+    'modeltranslation',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -41,6 +42,7 @@ INSTALLED_APPS = [
     'config.apps.ConfigConfig',
     'rest_framework',
     'rest_framework_simplejwt',
+    'ckeditor',
     # 'rest_framework_swagger',
     'drf_yasg',
     'users',
@@ -80,6 +82,12 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'Career_centr.wsgi.application'
 
+
+JAZZMIN_SETTINGS = {
+    "site_title": "Admin Panel",
+    "site_brand": "Career-Center",
+    "language_chooser": True,
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
@@ -158,6 +166,13 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+
+gettext = lambda s: s
+LANGUAGES = (
+    ('en', gettext('English')),
+    ('ru', gettext('Russian')),
+    ('', gettext('German')),
+)
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/

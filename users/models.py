@@ -113,7 +113,19 @@ class User(AbstractUser, BaseModel):
     objects = UserManager()
 
     def __str__(self):
-        return self.first_name
+        return str(self.first_name)
+
+    def token(self):
+        refresh = RefreshToken.for_user(self)
+        return {
+            "access": str(refresh.access_token),
+            "refresh_token": str(refresh)
+        }
+
+    def save(self, *args, **kwargs):
+        if self.pk:
+            self.clean()
+        super(User, self).save(*args, **kwargs)
 
 
 class UserConfirmation(models.Model):

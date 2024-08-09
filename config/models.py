@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from users.models import User
+from ckeditor.fields import RichTextField
 
 
 class Job(models.Model):
@@ -19,7 +20,7 @@ class Job(models.Model):
     resident = models.CharField("Ish beruvchi", max_length=50)
     start_data = models.DateTimeField("Boshlanish vaqti", auto_now=True)
     end_data = models.DateTimeField("Tugash vaqti", auto_now=True)
-    discribe = models.TextField("Ma'lumot")
+    discribe = RichTextField("Ma'lumot")
     salary = models.BooleanField("Holati", default=True)
     work_time = models.CharField("Ish vaqt tartibi", choices=TIME, default='part_time', max_length=20)
     status = models.CharField('Xolati', choices=STATUS, default='new', max_length=20)
@@ -28,12 +29,12 @@ class Job(models.Model):
     view_count = models.PositiveIntegerField(default=0)
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
 
 class New(models.Model):
     title = models.CharField('Nomi', max_length=100)
-    discribe = models.TextField("Ma'lumotlari")
+    discribe = RichTextField("Ma'lumotlari")
     show_data = models.DateTimeField("Sharx vaqti", auto_now=True)
 
     def __str__(self):
@@ -42,7 +43,7 @@ class New(models.Model):
 
 class Event(models.Model):
     title = models.CharField('Nomi', max_length=50)
-    discribe = models.TextField("Ma'lumot")
+    discribe = RichTextField("Ma'lumot")
     begin_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField(auto_now=True)
     status = models.BooleanField('Xolati', default=False)
@@ -63,7 +64,7 @@ class Rezume(models.Model):
 class Organization(models.Model):
     name = models.CharField("Korxona nomi", max_length=100)
     inn = models.PositiveIntegerField("INN", )
-    describe = models.TextField("Korxona xaqida")
+    describe = RichTextField("Korxona xaqida")
     resprentative = models.ForeignKey(User, on_delete=models.CASCADE)
     phone = models.PositiveIntegerField("Korxonani telefon raqami")
 
